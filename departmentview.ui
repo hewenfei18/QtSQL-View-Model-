@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DepartmentView</class>
+ <widget class="QWidget" name="DepartmentView">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>科室管理</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QWidget" name="widget_search" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_search">
+      <item>
+       <widget class="QLabel" name="label_search">
+        <property name="text">
+         <string>科室名称：</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_search"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_search">
+        <property name="text">
+         <string>搜索</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="tableWidget_department">
+     <property name="columnCount">
+      <number>2</number>
+     </property>
+     <!-- 表头设置：直接通过item设置（row=0为表头行） -->
+     <item row="0" column="0">
+      <property name="text">
+       <string>科室ID</string>
+      </property>
+     </item>
+     <item row="0" column="1">
+      <property name="text">
+       <string>科室名称</string>
+      </property>
+     </item>
+     <!-- 修复：移除错误的attribute标签，改用代码控制拉伸 -->
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="widget_btn" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_btn">
+      <item>
+       <widget class="QPushButton" name="pushButton_add">
+        <property name="text">
+         <string>添加科室</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_edit">
+        <property name="text">
+         <string>修改科室</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_delete">
+        <property name="text">
+         <string>删除科室</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_dev">
+     <property name="text">
+      <string>开发者：何文妃 学号：2023414300204</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignBottom</set>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+       <italic>true</italic>
+      </font>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
