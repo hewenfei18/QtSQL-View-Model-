@@ -1,33 +1,25 @@
-#ifndef LOGINVIEW_H
-#define LOGINVIEW_H
-
+#pragma once
 #include <QWidget>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QLabel>
-#include "idatabase.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class LoginView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
 
 class LoginView : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit LoginView(QWidget *parent = nullptr);
-    void setDatabase(idatabase* db);
-
+    ~LoginView();
 signals:
-    void loggedIn(const QString& username);
-    void registered();
-
+    void loginSuccess(const QString &user);
 private slots:
-    void onLoginClicked();
-    void onRegisterClicked();
-
+    void onLogin();
+    void onRegister();
 private:
-    QLabel *label;
-    QLineEdit *usernameEdit, *passwordEdit;
-    QPushButton *loginBtn, *registerBtn;
-    idatabase* m_db;
+    Ui::LoginView *ui;
 };
 
-#endif // LOGINVIEW_H
+} // namespace Hospital

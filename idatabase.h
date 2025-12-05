@@ -1,30 +1,39 @@
-#ifndef IDATABASE_H
-#define IDATABASE_H
-
-#include <QString>
-#include <QVariantList>
-#include <QVariantMap>
+#pragma once
 #include <QSqlDatabase>
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QSqlRecord>
+#include <QSqlQueryModel>
+#include <QVariantMap>
 
-class idatabase {
+namespace Hospital {
+
+class IDatabase
+{
 public:
-    idatabase();
-    ~idatabase();
+    static IDatabase* instance();
+    QSqlDatabase db() const { return m_db; }
 
-    bool connect(const QString& dbName = "hospital.db");
-    QVariantMap fetchOne(const QString& sql, const QVariantList& params = {});
-    QSqlQuery exec(const QString& sql, const QVariantList& params = {});
-    bool insert(const QString& table, const QVariantMap& data);
-    bool update(const QString& table, const QVariantMap& data, const QString& whereClause, const QVariantList& params = {});
-    bool remove(const QString& table, const QString& whereClause, const QVariantList& params = {});
+    bool validateUser(const QString &u, const QString &p);
+    bool addUserLog(const QString &u, const QString &a);
+
+    QSqlQueryModel* patientModel(const QString &f = {});
+    bool addPatient(const QVariantMap &d);
+    bool updatePatient(const QString &id, const QVariantMap &d);
+    bool deletePatient(const QString &id);
+
+    QSqlQueryModel* doctorModel(const QString &f = {});
+    bool addDoctor(const QVariantMap &d);
+    bool updateDoctor(const QString &id, const QVariantMap &d);
+    bool deleteDoctor(const QString &id);
+
+    // 科室：带ID
+    QSqlQueryModel* departmentModel(const QString &f = {});
+    bool addDepartment(const QString &name);
+    bool updateDepartment(int id, const QString &newName);
+    bool deleteDepartment(int id);
 
 private:
-    void createTables();
+    IDatabase();
+    bool initDb();          // 仅加列，不删表
     QSqlDatabase m_db;
-    QString m_connectionName;
 };
 
-#endif // IDATABASE_H
+} // namespace Hospital

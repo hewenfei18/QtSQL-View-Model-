@@ -18,6 +18,19 @@
     <widget class="QWidget" name="widget_search" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout_search">
       <item>
+       <widget class="QPushButton" name="pushButton_back">
+        <property name="minimumSize">
+         <size>
+          <width>80</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>返回</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="label_search">
         <property name="text">
          <string>科室名称：</string>
@@ -39,27 +52,23 @@
    </item>
    <item>
     <widget class="QTableWidget" name="tableWidget_department">
-     <property name="columnCount">
-      <number>2</number>
-     </property>
-     <!-- 表头设置：直接通过item设置（row=0为表头行） -->
-     <item row="0" column="0">
-      <property name="text">
-       <string>科室ID</string>
-      </property>
-     </item>
-     <item row="0" column="1">
-      <property name="text">
-       <string>科室名称</string>
-      </property>
-     </item>
-     <!-- 修复：移除错误的attribute标签，改用代码控制拉伸 -->
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
-     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="columnCount">
+      <number>2</number>
+     </property>
+     <property name="horizontalHeaderLabels">
+      <stringlist>
+       <string>科室ID</string>
+       <string>科室名称</string>
+      </stringlist>
+     </property>
+     <column/>
+     <column/>
     </widget>
    </item>
    <item>
@@ -91,17 +100,17 @@
    </item>
    <item>
     <widget class="QLabel" name="label_dev">
-     <property name="text">
-      <string>开发者：何文妃 学号：2023414300204</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignBottom</set>
-     </property>
      <property name="font">
       <font>
        <pointsize>8</pointsize>
        <italic>true</italic>
       </font>
+     </property>
+     <property name="text">
+      <string>开发者：何文妃 学号：2023414300204</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignBottom|Qt::AlignTrailing</set>
      </property>
     </widget>
    </item>

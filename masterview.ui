@@ -11,35 +11,10 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>医院诊疗系统-主界面</string>
+   <string>医院诊疗系统</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
-    <property name="contentsMargins">
-     <rect>
-      <x>5</x>
-      <y>5</y>
-      <width>5</width>
-      <height>5</height>
-     </rect>
-    </property>
-    <!-- 当前用户标签 -->
-    <item>
-     <widget class="QLabel" name="label_welcome">
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>当前用户：admin</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight | Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
-    <!-- 堆叠窗口（移除stretch属性，改用代码控制） -->
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
@@ -47,6 +22,18 @@
       </property>
       <widget class="QWidget" name="page_default">
        <layout class="QVBoxLayout" name="verticalLayout_default">
+        <item>
+         <widget class="QLabel" name="label_welcome">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>当前用户：admin</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QLabel" name="label_default">
           <property name="font">
@@ -59,7 +46,7 @@
            <string>请选择功能模块</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -69,7 +56,16 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menuBar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <resources/>

@@ -1,146 +1,84 @@
 #include "patientview.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
+#include "ui_patientview.h"
+#include "patienteditview.h"
+#include "idatabase.h"
 #include <QMessageBox>
 
+static void fillTable(QTableWidget *tw, QSqlQueryModel *m)
+{
+    tw->setRowCount(0);
+    for (int i = 0; i < m->rowCount(); ++i) {
+        tw->insertRow(i);
+        for (int j = 0; j < m->columnCount(); ++j)
+            tw->setItem(i, j, new QTableWidgetItem(m->data(m->index(i, j)).toString()));
+    }
+}
+
+namespace Hospital {
+
 PatientView::PatientView(QWidget *parent)
-    : QWidget(parent), m_db(nullptr), editDialog(new PatientEditView(this))
+    : QWidget(parent), ui(new Ui::PatientView)
 {
-    searchEdit = new QLineEdit;
-    searchBtn = new QPushButton("查询");
-    addBtn = new QPushButton("添加");
-    editBtn = new QPushButton("修改");
-    deleteBtn = new QPushButton("删除");
-    tableWidget = new QTableWidget;
-    tableWidget->setColumnCount(8);
-    tableWidget->setHorizontalHeaderLabels({
-        "患者ID", "身份证号", "姓名", "性别",
-        "出生日期", "身高(m)", "体重(kg)", "手机号"
-    });
-    tableWidget->horizontalHeader()->setStretchLastSection(true);
+    ui->setupUi(this);
 
-    QHBoxLayout *searchLayout = new QHBoxLayout;
-    searchLayout->addWidget(new QLabel("搜索："));
-    searchLayout->addWidget(searchEdit);
-    searchLayout->addWidget(searchBtn);
+    ui->tableWidget_patient->setColumnCount(8);
+    ui->tableWidget_patient->setHorizontalHeaderLabels(
+        {"患者ID", "身份证号", "姓名", "性别", "出生日期", "身高(m)", "体重(kg)", "手机号"});
 
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(addBtn);
-    btnLayout->addWidget(editBtn);
-    btnLayout->addWidget(deleteBtn);
+    refresh();
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addLayout(searchLayout);
-    mainLayout->addWidget(tableWidget);
-    mainLayout->addLayout(btnLayout);
-
-    connect(searchBtn, &QPushButton::clicked, this, &PatientView::onSearchClicked);
-    connect(addBtn, &QPushButton::clicked, this, &PatientView::onAddClicked);
-    connect(editBtn, &QPushButton::clicked, this, &PatientView::onEditClicked);
-    connect(deleteBtn, &QPushButton::clicked, this, &PatientView::onDeleteClicked);
+    connect(ui->pushButton_search, &QPushButton::clicked, this, &PatientView::onSearch);
+    connect(ui->pushButton_add,    &QPushButton::clicked, this, &PatientView::onAdd);
+    connect(ui->pushButton_edit,   &QPushButton::clicked, this, &PatientView::onEdit);
+    connect(ui->pushButton_delete, &QPushButton::clicked, this, &PatientView::onDelete);
+    connect(ui->pushButton_back,   &QPushButton::clicked, this, &PatientView::onBack);
 }
 
-void PatientView::setDatabase(idatabase* db)
+PatientView::~PatientView() { delete ui; }
+
+void PatientView::refresh()
 {
-    m_db = db;
-    refreshTable();
+    auto *m = IDatabase::instance()->patientModel(ui->lineEdit_search->text());
+    fillTable(ui->tableWidget_patient, m);
+    delete m;
 }
 
-void PatientView::refreshTable(const QString& filter)
+void PatientView::onSearch() { refresh(); }
+
+void PatientView::onAdd()
 {
-    if (!m_db) return;
-    tableWidget->setRowCount(0);
-
-    QString sql = "SELECT * FROM Patient";
-    QVariantList params;
-    if (!filter.isEmpty()) {
-        sql += " WHERE NAME LIKE ? OR ID LIKE ?";
-        params << "%" + filter + "%" << "%" + filter + "%";
-    }
-
-    QSqlQuery query = m_db->exec(sql, params);
-    int row = 0;
-    while (query.next()) {
-        tableWidget->insertRow(row);
-        tableWidget->setItem(row, 0, new QTableWidgetItem(query.value("ID").toString()));
-        tableWidget->setItem(row, 1, new QTableWidgetItem(query.value("ID_CARD").toString()));
-        tableWidget->setItem(row, 2, new QTableWidgetItem(query.value("NAME").toString()));
-        tableWidget->setItem(row, 3, new QTableWidgetItem(query.value("SEX").toString()));
-        tableWidget->setItem(row, 4, new QTableWidgetItem(query.value("DOB").toString()));
-        tableWidget->setItem(row, 5, new QTableWidgetItem(QString::number(query.value("HEIGHT").toDouble(), 'f', 2)));
-        tableWidget->setItem(row, 6, new QTableWidgetItem(QString::number(query.value("WEIGHT").toDouble(), 'f', 2)));
-        tableWidget->setItem(row, 7, new QTableWidgetItem(query.value("MOBILEPHONE").toString()));
-        row++;
+    if (!m_edit) m_edit = new PatientEditView(this);
+    if (m_edit->exec() == QDialog::Accepted) {
+        IDatabase::instance()->addPatient(m_edit->data());
+        IDatabase::instance()->addUserLog("admin", "新增患者");
+        refresh();
     }
 }
 
-void PatientView::onSearchClicked()
+void PatientView::onEdit()
 {
-    refreshTable(searchEdit->text().trimmed());
-}
-
-void PatientView::onAddClicked()
-{
-    if (!m_db) return;
-    editDialog->clearData();
-    if (editDialog->exec() == QDialog::Accepted) {
-        QVariantMap data = editDialog->getPatientData();
-        if (m_db->insert("Patient", data)) {
-            QMessageBox::information(this, "成功", "患者添加成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "患者ID或身份证号已存在");
-        }
+    int r = ui->tableWidget_patient->currentRow();
+    if (r < 0) return;
+    QString id = ui->tableWidget_patient->item(r, 0)->text();
+    if (!m_edit) m_edit = new PatientEditView(this);
+    m_edit->load(id);
+    if (m_edit->exec() == QDialog::Accepted) {
+        IDatabase::instance()->updatePatient(id, m_edit->data());
+        IDatabase::instance()->addUserLog("admin", "修改患者");
+        refresh();
     }
 }
 
-void PatientView::onEditClicked()
+void PatientView::onDelete()
 {
-    if (!m_db) return;
-    QTableWidgetItem *item = tableWidget->currentItem();
-    if (!item) {
-        QMessageBox::warning(this, "提示", "请选择要修改的患者");
-        return;
-    }
-    int row = item->row();
-    QVariantMap data;
-    data["ID"] = tableWidget->item(row, 0)->text();
-    data["ID_CARD"] = tableWidget->item(row, 1)->text();
-    data["NAME"] = tableWidget->item(row, 2)->text();
-    data["SEX"] = tableWidget->item(row, 3)->text();
-    data["DOB"] = tableWidget->item(row, 4)->text();
-    data["HEIGHT"] = tableWidget->item(row, 5)->text().toDouble();
-    data["WEIGHT"] = tableWidget->item(row, 6)->text().toDouble();
-    data["MOBILEPHONE"] = tableWidget->item(row, 7)->text();
-
-    editDialog->setPatientData(data);
-    if (editDialog->exec() == QDialog::Accepted) {
-        QVariantMap newData = editDialog->getPatientData();
-        if (m_db->update("Patient", newData, "ID = ?", {data["ID"]})) {
-            QMessageBox::information(this, "成功", "患者修改成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "身份证号已存在");
-        }
-    }
+    int r = ui->tableWidget_patient->currentRow();
+    if (r < 0) return;
+    QString id = ui->tableWidget_patient->item(r, 0)->text();
+    if (QMessageBox::question(this, "确认", "确定删除？") != QMessageBox::Yes) return;
+    IDatabase::instance()->deletePatient(id);
+        IDatabase::instance()->addUserLog("admin", "删除患者");
+    refresh();
 }
 
-void PatientView::onDeleteClicked()
-{
-    if (!m_db) return;
-    QTableWidgetItem *item = tableWidget->currentItem();
-    if (!item) {
-        QMessageBox::warning(this, "提示", "请选择要删除的患者");
-        return;
-    }
-    int id = tableWidget->item(item->row(), 0)->text().toInt();
-    if (QMessageBox::question(this, "确认", "确定删除该患者？") == QMessageBox::Yes) {
-        if (m_db->remove("Patient", "ID = ?", {id})) {
-            QMessageBox::information(this, "成功", "患者删除成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "删除失败");
-        }
-    }
-}
+void PatientView::onBack() { emit back(); }   // 关键：发信号
+} // namespace Hospital

@@ -1,32 +1,25 @@
-#ifndef PATIENTEDITVIEW_H
-#define PATIENTEDITVIEW_H
-
+#pragma once
 #include <QDialog>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QDateEdit>
-#include <QDoubleSpinBox>
-#include <QPushButton>
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class PatientEditView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
 
 class PatientEditView : public QDialog
 {
     Q_OBJECT
-
 public:
     explicit PatientEditView(QWidget *parent = nullptr);
-    void clearData();
-    QVariantMap getPatientData() const;
-    void setPatientData(const QVariantMap& data);
-
-public:
-    QLineEdit *idEdit, *idCardEdit, *nameEdit, *phoneEdit;
-    QComboBox *sexCombo;
-    QDateEdit *dobEdit;
-    QDoubleSpinBox *heightSpin, *weightSpin;
-
+    ~PatientEditView();
+    void load(const QString &id);
+    QVariantMap data() const;
 private slots:
-    void onSaveClicked();
-    void onCancelClicked();
+    void onSave();
+private:
+    Ui::PatientEditView *ui;
+    QString m_id;
 };
 
-#endif // PATIENTEDITVIEW_H
+} // namespace Hospital

@@ -14,6 +14,43 @@
    <string>编辑患者信息</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <!-- 新增：返回+标题行 -->
+   <item>
+    <widget class="QWidget" name="widget_title" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_title">
+      <item>
+       <widget class="QPushButton" name="pushButton_back">
+        <property name="text">
+         <string>返回</string>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>80</width>
+          <height>30</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_title">
+        <property name="text">
+         <string>编辑患者信息</string>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- 以下原有代码保持不变，但默认值清空 -->
    <item>
     <widget class="QWidget" name="widget_form" native="true">
      <layout class="QFormLayout" name="formLayout">
@@ -25,7 +62,12 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="lineEdit_id"/>
+       <widget class="QLineEdit" name="lineEdit_id">
+        <!-- 新增：默认清空 -->
+        <property name="text">
+         <string></string>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_idCard">
@@ -35,7 +77,12 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="lineEdit_idCard"/>
+       <widget class="QLineEdit" name="lineEdit_idCard">
+        <!-- 新增：默认清空 -->
+        <property name="text">
+         <string></string>
+        </property>
+       </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_name">
@@ -45,7 +92,12 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_name"/>
+       <widget class="QLineEdit" name="lineEdit_name">
+        <!-- 新增：默认清空 -->
+        <property name="text">
+         <string></string>
+        </property>
+       </widget>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="label_sex">
@@ -56,6 +108,10 @@
       </item>
       <item row="3" column="1">
        <widget class="QComboBox" name="comboBox_sex">
+        <!-- 新增：默认不选中任何选项 -->
+        <property name="currentIndex">
+         <number>-1</number>
+        </property>
         <item>
          <property name="text">
           <string>男</string>
@@ -77,12 +133,16 @@
       </item>
       <item row="4" column="1">
        <widget class="QDateEdit" name="dateEdit_dob">
+        <!-- 新增：默认清空日期（显示占位符） -->
         <property name="date">
          <date>
-          <year>2000</year>
+          <year>1900</year>
           <month>1</month>
           <day>1</day>
          </date>
+        </property>
+        <property name="displayFormat">
+         <string>yyyy-MM-dd</string>
         </property>
         <property name="calendarPopup">
          <bool>true</bool>
@@ -98,6 +158,7 @@
       </item>
       <item row="5" column="1">
        <widget class="QDoubleSpinBox" name="doubleSpinBox_height">
+        <!-- 新增：默认值设为0 -->
         <property name="minimum">
          <double>0.010000000000000</double>
         </property>
@@ -105,7 +166,7 @@
          <double>3.000000000000000</double>
         </property>
         <property name="value">
-         <double>1.700000000000000</double>
+         <double>0.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -118,6 +179,7 @@
       </item>
       <item row="6" column="1">
        <widget class="QDoubleSpinBox" name="doubleSpinBox_weight">
+        <!-- 新增：默认值设为0 -->
         <property name="minimum">
          <double>1.000000000000000</double>
         </property>
@@ -125,7 +187,7 @@
          <double>500.000000000000000</double>
         </property>
         <property name="value">
-         <double>60.000000000000000</double>
+         <double>0.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -137,7 +199,12 @@
        </widget>
       </item>
       <item row="7" column="1">
-       <widget class="QLineEdit" name="lineEdit_phone"/>
+       <widget class="QLineEdit" name="lineEdit_phone">
+        <!-- 新增：默认清空 -->
+        <property name="text">
+         <string></string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

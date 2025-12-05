@@ -1,214 +1,94 @@
 #include "doctorview.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QMessageBox>
+#include "ui_doctorview.h"
+#include "idatabase.h"
 #include <QInputDialog>
-#include <QFormLayout>
-#include <QDialog>
+#include <QMessageBox>
+
+static void fillTable(QTableWidget *tw, QSqlQueryModel *m)
+{
+    tw->setRowCount(0);
+    for (int i = 0; i < m->rowCount(); ++i) {
+        tw->insertRow(i);
+        for (int j = 0; j < m->columnCount(); ++j)
+            tw->setItem(i, j, new QTableWidgetItem(m->data(m->index(i, j)).toString()));
+    }
+}
+
+namespace Hospital {
 
 DoctorView::DoctorView(QWidget *parent)
-    : QWidget(parent), m_db(nullptr)
+    : QWidget(parent), ui(new Ui::DoctorView)
 {
-    searchEdit = new QLineEdit;
-    searchBtn = new QPushButton("搜索");
-    addBtn = new QPushButton("添加医生");
-    editBtn = new QPushButton("修改医生");
-    deleteBtn = new QPushButton("删除医生");
-    deptCombo = new QComboBox;
-    tableWidget = new QTableWidget;
-    tableWidget->setColumnCount(4);
-    tableWidget->setHorizontalHeaderLabels({"医生ID", "工号", "姓名", "所属科室"});
-    tableWidget->horizontalHeader()->setStretchLastSection(true);
+    ui->setupUi(this);
 
-    QHBoxLayout *searchLayout = new QHBoxLayout;
-    searchLayout->addWidget(new QLabel("医生姓名："));
-    searchLayout->addWidget(searchEdit);
-    searchLayout->addWidget(searchBtn);
+    ui->tableWidget_doctor->setColumnCount(4);
+    ui->tableWidget_doctor->setHorizontalHeaderLabels(
+        {"医生ID", "工号", "姓名", "所属科室"});
 
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(addBtn);
-    btnLayout->addWidget(editBtn);
-    btnLayout->addWidget(deleteBtn);
+    refresh();
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addLayout(searchLayout);
-    mainLayout->addWidget(tableWidget);
-    mainLayout->addLayout(btnLayout);
-
-    connect(searchBtn, &QPushButton::clicked, this, &DoctorView::onSearchClicked);
-    connect(addBtn, &QPushButton::clicked, this, &DoctorView::onAddClicked);
-    connect(editBtn, &QPushButton::clicked, this, &DoctorView::onEditClicked);
-    connect(deleteBtn, &QPushButton::clicked, this, &DoctorView::onDeleteClicked);
+    connect(ui->pushButton_search, &QPushButton::clicked, this, &DoctorView::onSearch);
+    connect(ui->pushButton_add,    &QPushButton::clicked, this, &DoctorView::onAdd);
+    connect(ui->pushButton_edit,   &QPushButton::clicked, this, &DoctorView::onEdit);
+    connect(ui->pushButton_delete, &QPushButton::clicked, this, &DoctorView::onDelete);
+    connect(ui->pushButton_back,   &QPushButton::clicked, this, &DoctorView::onBack);
 }
 
-void DoctorView::setDatabase(idatabase* db)
+DoctorView::~DoctorView() { delete ui; }
+
+void DoctorView::refresh()
 {
-    m_db = db;
-    loadDepartments();
-    refreshTable();
+    auto *m = IDatabase::instance()->doctorModel(ui->lineEdit_search->text());
+    fillTable(ui->tableWidget_doctor, m);
+    delete m;
 }
 
-void DoctorView::loadDepartments()
+void DoctorView::onSearch() { refresh(); }
+
+void DoctorView::onAdd()
 {
-    if (!m_db) return;
-    deptCombo->clear();
-    QSqlQuery query = m_db->exec("SELECT ID, NAME FROM Department");
-    while (query.next()) {
-        deptCombo->addItem(query.value("NAME").toString(), query.value("ID"));
+    QString id     = QInputDialog::getText(this, "添加", "医生ID");
+    QString workNo = QInputDialog::getText(this, "添加", "工号");
+    QString name   = QInputDialog::getText(this, "添加", "姓名");
+    QString dept   = QInputDialog::getText(this, "添加", "科室");
+    if (id.isEmpty() || name.isEmpty()) return;
+    QVariantMap d;
+    d["id"] = id; d["workNo"] = workNo; d["name"] = name; d["dept"] = dept;
+    if (IDatabase::instance()->addDoctor(d)) {
+        IDatabase::instance()->addUserLog("admin", "新增医生");
+        refresh();
     }
 }
 
-void DoctorView::refreshTable(const QString& filter)
+void DoctorView::onEdit()
 {
-    if (!m_db) return;
-    tableWidget->setRowCount(0);
-
-    QString sql = R"(
-        SELECT d.ID, d.WORK_NO, d.NAME, dept.NAME
-        FROM Doctor d LEFT JOIN Department dept ON d.DEPARTMENT_ID = dept.ID
-    )";
-    QVariantList params;
-    if (!filter.isEmpty()) {
-        sql += " WHERE d.NAME LIKE ?";
-        params << "%" + filter + "%";
-    }
-
-    QSqlQuery query = m_db->exec(sql, params);
-    int row = 0;
-    while (query.next()) {
-        tableWidget->insertRow(row);
-        tableWidget->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
-        tableWidget->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
-        tableWidget->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
-        tableWidget->setItem(row, 3, new QTableWidgetItem(query.value(3).toString()));
-        row++;
+    int r = ui->tableWidget_doctor->currentRow();
+    if (r < 0) return;
+    QString id     = ui->tableWidget_doctor->item(r, 0)->text();
+    QString workNo = QInputDialog::getText(this, "修改", "新工号", QLineEdit::Normal,
+                                          ui->tableWidget_doctor->item(r, 1)->text());
+    QString name   = QInputDialog::getText(this, "修改", "新姓名", QLineEdit::Normal,
+                                          ui->tableWidget_doctor->item(r, 2)->text());
+    QString dept   = QInputDialog::getText(this, "修改", "新科室", QLineEdit::Normal,
+                                          ui->tableWidget_doctor->item(r, 3)->text());
+    QVariantMap d;
+    d["workNo"] = workNo; d["name"] = name; d["dept"] = dept;
+    if (IDatabase::instance()->updateDoctor(id, d)) {
+        IDatabase::instance()->addUserLog("admin", "修改医生");
+        refresh();
     }
 }
 
-void DoctorView::onSearchClicked()
+void DoctorView::onDelete()
 {
-    refreshTable(searchEdit->text().trimmed());
+    int r = ui->tableWidget_doctor->currentRow();
+    if (r < 0) return;
+    QString id = ui->tableWidget_doctor->item(r, 0)->text();
+    if (QMessageBox::question(this, "确认", "确定删除？") != QMessageBox::Yes) return;
+    IDatabase::instance()->deleteDoctor(id);
+    IDatabase::instance()->addUserLog("admin", "删除医生");
+    refresh();
 }
 
-void DoctorView::onAddClicked()
-{
-    if (!m_db || deptCombo->count() == 0) return;
-    QDialog dlg(this);
-    dlg.setWindowTitle("添加医生");
-    QLineEdit *workNoEdit = new QLineEdit;
-    QLineEdit *nameEdit = new QLineEdit;
-    QComboBox *deptComboDlg = new QComboBox;
-    loadDepartments();
-    for (int i = 0; i < deptCombo->count(); i++) {
-        deptComboDlg->addItem(deptCombo->itemText(i), deptCombo->itemData(i));
-    }
-
-    QFormLayout *form = new QFormLayout(&dlg);
-    form->addRow("工号：", workNoEdit);
-    form->addRow("姓名：", nameEdit);
-    form->addRow("所属科室：", deptComboDlg);
-    QPushButton *okBtn = new QPushButton("确定");
-    QPushButton *cancelBtn = new QPushButton("取消");
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(okBtn);
-    btnLayout->addWidget(cancelBtn);
-    form->addRow(btnLayout);
-
-    connect(okBtn, &QPushButton::clicked, &dlg, &QDialog::accept);
-    connect(cancelBtn, &QPushButton::clicked, &dlg, &QDialog::reject);
-
-    if (dlg.exec() == QDialog::Accepted) {
-        QString workNo = workNoEdit->text().trimmed();
-        QString name = nameEdit->text().trimmed();
-        if (workNo.isEmpty() || name.isEmpty()) {
-            QMessageBox::warning(this, "提示", "工号和姓名不能为空");
-            return;
-        }
-        if (m_db->insert("Doctor", {
-                                       {"WORK_NO", workNo},
-                                       {"NAME", name},
-                                       {"DEPARTMENT_ID", deptComboDlg->currentData()}
-                                   })) {
-            QMessageBox::information(this, "成功", "医生添加成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "工号已存在");
-        }
-    }
-}
-
-void DoctorView::onEditClicked()
-{
-    if (!m_db) return;
-    QTableWidgetItem *item = tableWidget->currentItem();
-    if (!item) {
-        QMessageBox::warning(this, "提示", "请选择要修改的医生");
-        return;
-    }
-    int id = tableWidget->item(item->row(), 0)->text().toInt();
-    QString oldWorkNo = tableWidget->item(item->row(), 1)->text();
-    QString oldName = tableWidget->item(item->row(), 2)->text();
-
-    QDialog dlg(this);
-    dlg.setWindowTitle("修改医生");
-    QLineEdit *workNoEdit = new QLineEdit(oldWorkNo);
-    QLineEdit *nameEdit = new QLineEdit(oldName);
-    QComboBox *deptComboDlg = new QComboBox;
-    loadDepartments();
-    for (int i = 0; i < deptCombo->count(); i++) {
-        deptComboDlg->addItem(deptCombo->itemText(i), deptCombo->itemData(i));
-    }
-
-    QFormLayout *form = new QFormLayout(&dlg);
-    form->addRow("工号：", workNoEdit);
-    form->addRow("姓名：", nameEdit);
-    form->addRow("所属科室：", deptComboDlg);
-    QPushButton *okBtn = new QPushButton("确定");
-    QPushButton *cancelBtn = new QPushButton("取消");
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(okBtn);
-    btnLayout->addWidget(cancelBtn);
-    form->addRow(btnLayout);
-
-    connect(okBtn, &QPushButton::clicked, &dlg, &QDialog::accept);
-    connect(cancelBtn, &QPushButton::clicked, &dlg, &QDialog::reject);
-
-    if (dlg.exec() == QDialog::Accepted) {
-        QString workNo = workNoEdit->text().trimmed();
-        QString name = nameEdit->text().trimmed();
-        if (workNo.isEmpty() || name.isEmpty()) {
-            QMessageBox::warning(this, "提示", "工号和姓名不能为空");
-            return;
-        }
-        if (m_db->update("Doctor", {
-                                       {"WORK_NO", workNo},
-                                       {"NAME", name},
-                                       {"DEPARTMENT_ID", deptComboDlg->currentData()}
-                                   }, "ID = ?", {id})) {
-            QMessageBox::information(this, "成功", "医生修改成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "工号已存在");
-        }
-    }
-}
-
-void DoctorView::onDeleteClicked()
-{
-    if (!m_db) return;
-    QTableWidgetItem *item = tableWidget->currentItem();
-    if (!item) {
-        QMessageBox::warning(this, "提示", "请选择要删除的医生");
-        return;
-    }
-    int id = tableWidget->item(item->row(), 0)->text().toInt();
-    if (QMessageBox::question(this, "确认", "确定删除该医生？") == QMessageBox::Yes) {
-        if (m_db->remove("Doctor", "ID = ?", {id})) {
-            QMessageBox::information(this, "成功", "医生删除成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "删除失败");
-        }
-    }
-}
+void DoctorView::onBack() { emit back(); }   // 关键：发信号
+} // namespace Hospital

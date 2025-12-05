@@ -1,34 +1,29 @@
-#ifndef DEPARTMENTVIEW_H
-#define DEPARTMENTVIEW_H
-
+#pragma once
 #include <QWidget>
-#include <QTableWidget>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QHeaderView>  // 修复 QHeaderView 不完整类型
-#include "idatabase.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class DepartmentView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
 
 class DepartmentView : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit DepartmentView(QWidget *parent = nullptr);
-    void setDatabase(idatabase* db);
-
+    ~DepartmentView();
+signals:
+    void back();
 private slots:
-    void onSearchClicked();
-    void onAddClicked();
-    void onEditClicked();
-    void onDeleteClicked();
-
+    void onSearch();
+    void onAdd();
+    void onEdit();
+    void onDelete();
+    void onBack();
 private:
-    void refreshTable(const QString& filter = "");
-
-    QLineEdit *searchEdit;
-    QTableWidget *tableWidget;
-    QPushButton *searchBtn, *addBtn, *editBtn, *deleteBtn;
-    idatabase* m_db;
+    void refresh();
+    Ui::DepartmentView *ui;
 };
 
-#endif // DEPARTMENTVIEW_H
+} // namespace Hospital

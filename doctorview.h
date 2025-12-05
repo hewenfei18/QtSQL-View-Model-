@@ -1,37 +1,29 @@
-#ifndef DOCTORVIEW_H
-#define DOCTORVIEW_H
-
+#pragma once
 #include <QWidget>
-#include <QTableWidget>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QComboBox>
-#include <QHeaderView>  // 修复 QHeaderView 不完整类型
-#include "idatabase.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class DoctorView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
 
 class DoctorView : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit DoctorView(QWidget *parent = nullptr);
-    void setDatabase(idatabase* db);
-
+    ~DoctorView();
+signals:
+    void back();   // 返回欢迎页
 private slots:
-    void onSearchClicked();
-    void onAddClicked();
-    void onEditClicked();
-    void onDeleteClicked();
-
+    void onSearch();
+    void onAdd();
+    void onEdit();
+    void onDelete();
+    void onBack();
 private:
-    void refreshTable(const QString& filter = "");
-    void loadDepartments();
-
-    QLineEdit *searchEdit;
-    QTableWidget *tableWidget;
-    QPushButton *searchBtn, *addBtn, *editBtn, *deleteBtn;
-    QComboBox *deptCombo;
-    idatabase* m_db;
+    void refresh();
+    Ui::DoctorView *ui;
 };
 
-#endif // DOCTORVIEW_H
+} // namespace Hospital

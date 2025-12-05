@@ -1,101 +1,58 @@
 #include "patienteditview.h"
-#include <QFormLayout>
-#include <QHBoxLayout>
+#include "ui_patienteditview.h"
+#include "idatabase.h"
+#include <QSqlRecord>
 #include <QMessageBox>
+#include <QSqlQuery>
+namespace Hospital {
 
 PatientEditView::PatientEditView(QWidget *parent)
-    : QDialog(parent)
+    : QDialog(parent), ui(new Ui::PatientEditView)
 {
-    setWindowTitle("编辑患者信息");
-    setFixedSize(400, 400);
-
-    idEdit = new QLineEdit;
-    idCardEdit = new QLineEdit;
-    nameEdit = new QLineEdit;
-    sexCombo = new QComboBox;
-    sexCombo->addItems({"男", "女"});
-    dobEdit = new QDateEdit(QDate::currentDate());
-    dobEdit->setCalendarPopup(true);
-    heightSpin = new QDoubleSpinBox;
-    heightSpin->setRange(0.5, 3.0);
-    heightSpin->setValue(1.70);
-    weightSpin = new QDoubleSpinBox;
-    weightSpin->setRange(1.0, 500.0);
-    weightSpin->setValue(60.0);
-    phoneEdit = new QLineEdit;
-
-    QPushButton *saveBtn = new QPushButton("保存");
-    QPushButton *cancelBtn = new QPushButton("取消");
-
-    QFormLayout *form = new QFormLayout;
-    form->addRow("患者ID：", idEdit);
-    form->addRow("身份证号：", idCardEdit);
-    form->addRow("姓名：", nameEdit);
-    form->addRow("性别：", sexCombo);
-    form->addRow("出生日期：", dobEdit);
-    form->addRow("身高(m)：", heightSpin);
-    form->addRow("体重(kg)：", weightSpin);
-    form->addRow("手机号：", phoneEdit);
-
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(saveBtn);
-    btnLayout->addWidget(cancelBtn);
-    form->addRow(btnLayout);
-
-    setLayout(form);
-
-    connect(saveBtn, &QPushButton::clicked, this, &PatientEditView::onSaveClicked);
-    connect(cancelBtn, &QPushButton::clicked, this, &PatientEditView::onCancelClicked);
+    ui->setupUi(this);
+    connect(ui->pushButton_save, &QPushButton::clicked, this, &PatientEditView::onSave);
+    connect(ui->pushButton_cancel, &QPushButton::clicked, this, &QDialog::reject);
 }
 
-void PatientEditView::clearData()
+PatientEditView::~PatientEditView() { delete ui; }
+
+void PatientEditView::load(const QString &id)
 {
-    idEdit->clear();
-    idCardEdit->clear();
-    nameEdit->clear();
-    sexCombo->setCurrentIndex(0);
-    dobEdit->setDate(QDate::currentDate());
-    heightSpin->setValue(1.70);
-    weightSpin->setValue(60.0);
-    phoneEdit->clear();
+    m_id = id;
+    QSqlQuery q("SELECT * FROM patients WHERE id='" + id + "'");
+    if (q.next()) {
+        ui->lineEdit_id->setText(q.value("id").toString());
+        ui->lineEdit_idCard->setText(q.value("idCard").toString());
+        ui->lineEdit_name->setText(q.value("name").toString());
+        ui->comboBox_sex->setCurrentText(q.value("sex").toString());
+        ui->dateEdit_dob->setDate(QDate::fromString(q.value("dob").toString(), Qt::ISODate));
+        ui->doubleSpinBox_height->setValue(q.value("height").toDouble());
+        ui->doubleSpinBox_weight->setValue(q.value("weight").toDouble());
+        ui->lineEdit_phone->setText(q.value("phone").toString());
+    }
 }
 
-QVariantMap PatientEditView::getPatientData() const
+QVariantMap PatientEditView::data() const
 {
-    return {
-        {"ID", idEdit->text().trimmed()},
-        {"ID_CARD", idCardEdit->text().trimmed()},
-        {"NAME", nameEdit->text().trimmed()},
-        {"SEX", sexCombo->currentText()},
-        {"DOB", dobEdit->date().toString("yyyy-MM-dd")},
-        {"HEIGHT", heightSpin->value()},
-        {"WEIGHT", weightSpin->value()},
-        {"MOBILEPHONE", phoneEdit->text().trimmed()}
-    };
+    QVariantMap m;
+    m["id"]      = ui->lineEdit_id->text();
+    m["idCard"]  = ui->lineEdit_idCard->text();
+    m["name"]    = ui->lineEdit_name->text();
+    m["sex"]     = ui->comboBox_sex->currentText();
+    m["dob"]     = ui->dateEdit_dob->date().toString(Qt::ISODate);
+    m["height"]  = ui->doubleSpinBox_height->value();
+    m["weight"]  = ui->doubleSpinBox_weight->value();
+    m["phone"]   = ui->lineEdit_phone->text();
+    return m;
 }
 
-void PatientEditView::setPatientData(const QVariantMap& data)
+void PatientEditView::onSave()
 {
-    idEdit->setText(data["ID"].toString());
-    idCardEdit->setText(data["ID_CARD"].toString());
-    nameEdit->setText(data["NAME"].toString());
-    sexCombo->setCurrentText(data["SEX"].toString());
-    dobEdit->setDate(QDate::fromString(data["DOB"].toString(), "yyyy-MM-dd"));
-    heightSpin->setValue(data["HEIGHT"].toDouble());
-    weightSpin->setValue(data["WEIGHT"].toDouble());
-    phoneEdit->setText(data["MOBILEPHONE"].toString());
-}
-
-void PatientEditView::onSaveClicked()
-{
-    if (nameEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "提示", "姓名不能为空");
+    if (ui->lineEdit_id->text().isEmpty() || ui->lineEdit_name->text().isEmpty()) {
+        QMessageBox::warning(this, "提示", "ID 和姓名不能为空");
         return;
     }
     accept();
 }
 
-void PatientEditView::onCancelClicked()
-{
-    reject();
-}
+} // namespace Hospital

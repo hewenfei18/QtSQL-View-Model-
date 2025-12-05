@@ -1,37 +1,32 @@
-#ifndef PATIENTVIEW_H
-#define PATIENTVIEW_H
-
+#pragma once
 #include <QWidget>
-#include <QTableWidget>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QHeaderView>  // 修复 QHeaderView 不完整类型
-#include "idatabase.h"
-#include "patienteditview.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class PatientView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
+
+class PatientEditView;
 
 class PatientView : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit PatientView(QWidget *parent = nullptr);
-    void setDatabase(idatabase* db);
-
+    ~PatientView();
+signals:
+    void back();   // 返回欢迎页
 private slots:
-    void onSearchClicked();
-    void onAddClicked();
-    void onEditClicked();
-    void onDeleteClicked();
-
+    void onSearch();
+    void onAdd();
+    void onEdit();
+    void onDelete();
+    void onBack();
 private:
-    void refreshTable(const QString& filter = "");
-
-    // 修复成员初始化顺序：m_db 移到最前面
-    idatabase* m_db;
-    PatientEditView *editDialog;
-    QLineEdit *searchEdit;
-    QTableWidget *tableWidget;
-    QPushButton *searchBtn, *addBtn, *editBtn, *deleteBtn;
+    void refresh();
+    Ui::PatientView *ui;
+    PatientEditView *m_edit = nullptr;
 };
 
-#endif // PATIENTVIEW_H
+} // namespace Hospital

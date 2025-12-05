@@ -99,5 +99,6 @@
   </layout>
  </widget>
  <resources/>
+ <!-- 关键：connections标签为空，无任何自动信号槽绑定 -->
  <connections/>
 </ui>

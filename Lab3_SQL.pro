@@ -42,6 +42,11 @@ DESTDIR = ./build
 OBJECTS_DIR = $$DESTDIR/obj
 MOC_DIR = $$DESTDIR/moc
 UI_DIR = $$DESTDIR/ui
+RESOURCES += \
+    resources.qrc
 
-# 可选：添加UI头文件的包含路径（防止IDE找不到）
-INCLUDEPATH += $$UI_DIR
+# 自动连接 UI
+QT += xml
+QT += sql
+# 不让 qmake 清理数据库
+QMAKE_CLEAN += $$quote(-exclude Qt_Lab3a.db)

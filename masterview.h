@@ -1,27 +1,33 @@
-#ifndef MASTERVIEW_H
-#define MASTERVIEW_H
-
+#pragma once
 #include <QMainWindow>
-#include <QStackedWidget>
-#include <QLabel>
-#include "departmentview.h"
-#include "doctorview.h"
-#include "patientview.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class MasterView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
+
+class WelcomeView;
+class PatientView;
+class DoctorView;
+class DepartmentView;
 
 class MasterView : public QMainWindow
 {
     Q_OBJECT
-
 public:
     explicit MasterView(QWidget *parent = nullptr);
-    void setDatabase(idatabase* db);
-
+    ~MasterView();
+    void setUser(const QString &u);
+private slots:
+    void switchTo(QWidget *w);
 private:
-    QStackedWidget *stackedWidget;
-    DepartmentView *deptView;
-    DoctorView *doctorView;
-    PatientView *patientView;
-    QLabel *welcomeLabel;
+    Ui::MasterView *ui;
+    QString m_user;
+    WelcomeView *m_welcome = nullptr;
+    PatientView *m_patient = nullptr;
+    DoctorView *m_doctor = nullptr;
+    DepartmentView *m_dept = nullptr;
 };
 
-#endif // MASTERVIEW_H
+} // namespace Hospital

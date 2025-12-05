@@ -1,129 +1,112 @@
 #include "departmentview.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
+#include "ui_departmentview.h"
+#include "idatabase.h"
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QDebug>        // 调试
+#include <QSqlError>     // 取错误
+#include <QSqlQuery>     // 立刻再查库
+#include <QFileInfo>     // 绝对路径
+#include <QDir>          // 路径格式化
+
+static void fillTable(QTableWidget *tw, QSqlQueryModel *m)
+{
+    tw->setRowCount(0);
+    for (int i = 0; i < m->rowCount(); ++i) {
+        tw->insertRow(i);
+        for (int j = 0; j < m->columnCount(); ++j)
+            tw->setItem(i, j, new QTableWidgetItem(m->data(m->index(i, j)).toString()));
+    }
+}
+
+namespace Hospital {
 
 DepartmentView::DepartmentView(QWidget *parent)
-    : QWidget(parent), m_db(nullptr)
+    : QWidget(parent), ui(new Ui::DepartmentView)
 {
-    searchEdit = new QLineEdit;
-    searchBtn = new QPushButton("搜索");
-    addBtn = new QPushButton("添加科室");
-    editBtn = new QPushButton("修改科室");
-    deleteBtn = new QPushButton("删除科室");
-    tableWidget = new QTableWidget;
-    tableWidget->setColumnCount(2);
-    tableWidget->setHorizontalHeaderLabels({"科室ID", "科室名称"});
-    tableWidget->horizontalHeader()->setStretchLastSection(true);
-
-    QHBoxLayout *searchLayout = new QHBoxLayout;
-    searchLayout->addWidget(new QLabel("科室名称："));
-    searchLayout->addWidget(searchEdit);
-    searchLayout->addWidget(searchBtn);
-
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(addBtn);
-    btnLayout->addWidget(editBtn);
-    btnLayout->addWidget(deleteBtn);
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addLayout(searchLayout);
-    mainLayout->addWidget(tableWidget);
-    mainLayout->addLayout(btnLayout);
-
-    connect(searchBtn, &QPushButton::clicked, this, &DepartmentView::onSearchClicked);
-    connect(addBtn, &QPushButton::clicked, this, &DepartmentView::onAddClicked);
-    connect(editBtn, &QPushButton::clicked, this, &DepartmentView::onEditClicked);
-    connect(deleteBtn, &QPushButton::clicked, this, &DepartmentView::onDeleteClicked);
+    ui->setupUi(this);
+    refresh();
+    connect(ui->pushButton_search, &QPushButton::clicked, this, &DepartmentView::onSearch);
+    connect(ui->pushButton_add,    &QPushButton::clicked, this, &DepartmentView::onAdd);
+    connect(ui->pushButton_edit,   &QPushButton::clicked, this, &DepartmentView::onEdit);
+    connect(ui->pushButton_delete, &QPushButton::clicked, this, &DepartmentView::onDelete);
+    connect(ui->pushButton_back,   &QPushButton::clicked, this, &DepartmentView::onBack);
 }
 
-void DepartmentView::setDatabase(idatabase* db)
+DepartmentView::~DepartmentView() { delete ui; }
+
+void DepartmentView::refresh()
 {
-    m_db = db;
-    refreshTable();
+    auto *m = IDatabase::instance()->departmentModel(ui->lineEdit_search->text());
+
+    // ===== 1. 打印实际数据库绝对路径 =====
+    qDebug() << "【当前 db 绝对路径】"
+             << QDir::toNativeSeparators(QFileInfo("Qt_Lab3a.db").absoluteFilePath());
+
+    // ===== 2. 立刻再查一次库内真实数据 =====
+    QSqlQuery q("SELECT id, name FROM departments ORDER BY id");
+    qDebug() << "【库内实时数据】";
+    while (q.next())
+        qDebug() << q.value(0).toInt() << q.value(1).toString();
+    qDebug() << "【库内总行数】" << q.size();
+
+    if (m->lastError().isValid())
+        qDebug() << "【model 错误】" << m->lastError().text();
+
+    fillTable(ui->tableWidget_department, m);
+    delete m;
 }
 
-void DepartmentView::refreshTable(const QString& filter)
+void DepartmentView::onSearch() { refresh(); }
+
+void DepartmentView::onAdd()
 {
-    if (!m_db) return;
-    tableWidget->setRowCount(0);
+    QString name = QInputDialog::getText(this, "添加", "科室名称");
+    if (name.isEmpty()) return;
 
-    QString sql = "SELECT * FROM Department";
-    QVariantList params;
-    if (!filter.isEmpty()) {
-        sql += " WHERE NAME LIKE ?";
-        params << "%" + filter + "%";
-    }
-
-    QSqlQuery query = m_db->exec(sql, params);
-    int row = 0;
-    while (query.next()) {
-        tableWidget->insertRow(row);
-        tableWidget->setItem(row, 0, new QTableWidgetItem(query.value("ID").toString()));
-        tableWidget->setItem(row, 1, new QTableWidgetItem(query.value("NAME").toString()));
-        row++;
+    if (IDatabase::instance()->addDepartment(name)) {
+        qDebug() << "【新增科室成功】";
+        IDatabase::instance()->addUserLog("admin", "新增科室");
+        refresh();
+    } else {
+        qDebug() << "【新增失败】" << QSqlDatabase::database().lastError().text();
     }
 }
 
-void DepartmentView::onSearchClicked()
+void DepartmentView::onEdit()
 {
-    refreshTable(searchEdit->text().trimmed());
-}
+    int r = ui->tableWidget_department->currentRow();
+    if (r < 0) return;
+    int   id   = ui->tableWidget_department->item(r, 0)->text().toInt();
+    QString oldName = ui->tableWidget_department->item(r, 1)->text();
+    QString newName = QInputDialog::getText(this, "修改", "新名称", QLineEdit::Normal, oldName);
+    if (newName.isEmpty() || oldName == newName) return;
 
-void DepartmentView::onAddClicked()
-{
-    if (!m_db) return;
-    bool ok;
-    QString name = QInputDialog::getText(this, "添加科室", "科室名称：", QLineEdit::Normal, "", &ok);
-    if (ok && !name.isEmpty()) {
-        if (m_db->insert("Department", {{"NAME", name}})) {
-            QMessageBox::information(this, "成功", "科室添加成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "科室名称已存在");
-        }
+    if (IDatabase::instance()->updateDepartment(id, newName)) {
+        qDebug() << "【修改科室成功】";
+        IDatabase::instance()->addUserLog("admin", "修改科室");
+        refresh();
+    } else {
+        qDebug() << "【修改失败】" << QSqlDatabase::database().lastError().text();
     }
 }
 
-void DepartmentView::onEditClicked()
+void DepartmentView::onDelete()
 {
-    if (!m_db) return;
-    QTableWidgetItem *item = tableWidget->currentItem();
-    if (!item) {
-        QMessageBox::warning(this, "提示", "请选择要修改的科室");
-        return;
-    }
-    int id = tableWidget->item(item->row(), 0)->text().toInt();
-    QString oldName = tableWidget->item(item->row(), 1)->text();
-    bool ok;
-    QString newName = QInputDialog::getText(this, "修改科室", "科室名称：", QLineEdit::Normal, oldName, &ok);
-    if (ok && !newName.isEmpty() && newName != oldName) {
-        if (m_db->update("Department", {{"NAME", newName}}, "ID = ?", {id})) {
-            QMessageBox::information(this, "成功", "科室修改成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "科室名称已存在");
-        }
+    int r = ui->tableWidget_department->currentRow();
+    if (r < 0) return;
+    int id = ui->tableWidget_department->item(r, 0)->text().toInt();
+    if (QMessageBox::question(this, "确认", "确定删除？") != QMessageBox::Yes) return;
+
+    if (IDatabase::instance()->deleteDepartment(id)) {
+        qDebug() << "【删除科室成功】";
+        IDatabase::instance()->addUserLog("admin", "删除科室");
+        refresh();
+    } else {
+        qDebug() << "【删除失败】" << QSqlDatabase::database().lastError().text();
     }
 }
 
-void DepartmentView::onDeleteClicked()
-{
-    if (!m_db) return;
-    QTableWidgetItem *item = tableWidget->currentItem();
-    if (!item) {
-        QMessageBox::warning(this, "提示", "请选择要删除的科室");
-        return;
-    }
-    int id = tableWidget->item(item->row(), 0)->text().toInt();
-    if (QMessageBox::question(this, "确认", "确定删除该科室？") == QMessageBox::Yes) {
-        if (m_db->remove("Department", "ID = ?", {id})) {
-            QMessageBox::information(this, "成功", "科室删除成功");
-            refreshTable();
-        } else {
-            QMessageBox::warning(this, "失败", "该科室已关联医生，无法删除");
-        }
-    }
-}
+void DepartmentView::onBack() { emit back(); }
+
+} // namespace Hospital

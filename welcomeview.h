@@ -1,22 +1,24 @@
-#ifndef WELCOMEVIEW_H
-#define WELCOMEVIEW_H
-
+#pragma once
 #include <QWidget>
-#include <QPushButton>
-#include <QLabel>
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class WelcomeView; }
+QT_END_NAMESPACE
+
+namespace Hospital {
 
 class WelcomeView : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit WelcomeView(QWidget *parent = nullptr);
-
+    ~WelcomeView();
 signals:
-    void toLoginView();
-
-private slots:
-    void onEnterClicked();
+    void gotoPatient();
+    void gotoDoctor();
+    void gotoDept();
+private:
+    Ui::WelcomeView *ui;
 };
 
-#endif // WELCOMEVIEW_H
+} // namespace Hospital
